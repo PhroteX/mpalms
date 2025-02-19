@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MPAL Meclis Simülasyonu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='assets/meclislogo.jpg') }}" type="image/jpg">
+</head>
+<body>
+    <header class="header">
+        <img src="{{ url_for('static', filename='assets/meclislogo.jpg') }}" alt="MPAL Meclis Logo" class="logo">
+        <h1 class="header-title">MPAL Meclis Simülasyonu</h1>
+    </header>
+
+    <div class="setup-container">
+        <h2>Komisyon Kurulumu</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label>Milletvekili Sayısı:</label>
+                <input type="number" name="vekil_sayisi" min="1" required>
+            </div>
+            
+            <div id="vekil-isimleri">
+                <!-- JavaScript ile dinamik olarak input alanları eklenecek -->
+            </div>
+            
+            <button type="submit">Kurulumu Tamamla</button>
+        </form>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <script>
+        const vekilSayisiInput = document.querySelector('input[name="vekil_sayisi"]');
+        const vekilIsimleriDiv = document.getElementById('vekil-isimleri');
+        
+        vekilSayisiInput.addEventListener('change', function() {
+            const sayi = parseInt(this.value);
+            vekilIsimleriDiv.innerHTML = '';
+            
+            for(let i = 0; i < sayi; i++) {
+                const div = document.createElement('div');
+                div.className = 'form-group vekil-bilgileri';
+                div.innerHTML = `
+                    <div class="form-group">
+                        <label>${i+1}. Milletvekili İsmi:</label>
+                        <input type="text" name="vekil_${i}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>${i+1}. Milletvekili E-posta:</label>
+                        <input type="email" name="vekil_email_${i}" required placeholder="ornek@email.com">
+                        <small class="form-help">* Sistem bildirimleri bu adrese gönderilecektir. Lütfen aktif kullanılan bir e-posta adresi giriniz.</small>
+                    </div>
+                `;
+                vekilIsimleriDiv.appendChild(div);
+            }
+        });
+    </script>
+
+    <footer class="footer">
+        <p>© 2024 MPAL Meclis Simülasyonu. Tüm hakları saklıdır.</p>
+    </footer>
+</body>
+</html> 

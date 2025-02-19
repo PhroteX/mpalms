@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="baskan-container">
+    <h2>{{ session.komisyon }} Komisyonu</h2>
+    
+    <!-- Oturum Yönetimi -->
+    <div class="oturum-panel">
+        {% if active_oturum %}
+            <div class="active-oturum">
+                <h3>Aktif Oturum</h3>
+                <p><strong>Konu:</strong> {{ active_oturum.konu }}</p>
+                <p class="timer">Kalan Süre: <span id="countdown">{{ active_oturum.kalan_sure }}</span></p>
+                <button onclick="endOturum()" class="end-btn">Oturumu Bitir</button>
+            </div>
+        {% else %}
+            <div class="yoklama-section" style="display: block;">
+                <h3>Yoklama</h3>
+                <div class="vekil-listesi">
+                    {% for vekil in vekiller %}
+                    <div class="vekil-durum">
+                        <span>{{ vekil.isim }}</span>
+                        <div class="durum-secici">
+                            <label>
+                                <input type="radio" name="vekil_{{ vekil.id }}" value="1" checked> Mevcut
+                            </label>
+                            <label>
+                                <input type="radio" name="vekil_{{ vekil.id }}" value="0"> Yok
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button onclick="yoklamaAl()" class="yoklama-btn">Yoklama Al</button>
+            </div>
+
+            <div class="new-oturum" style="display: none;">
+                <h3>Yeni Oturum Başlat</h3>
+                <form method="POST" action="{{ url_for('oturum_baslat') }}">
+                    <div class="form-group">
+                        <label>Oturum Konusu:</label>
+                        <input type="text" name="konu" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Süre (dakika):</label>
+                        <input type="number" name="sure" min="1" required>
+                    </div>
+                    <button type="submit">Oturumu Başlat</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Önergeler -->
+    <div class="onerge-panel">
+        <h3>Önergeler</h3>
+        <div class="new-onerge">
+            <form method="POST" action="{{ url_for('onerge_ekle') }}">
+                <div class="form-group">
+                    <label>Milletvekili:</label>
+                    <select name="vekil_id" required>
+                        {% for vekil in vekiller %}
+                            <option value="{{ vekil.id }}">{{ vekil.isim }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Önerge Metni:</label>
+                    <textarea name="icerik" required></textarea>
+                </div>
+                <button type="submit">Önerge Ekle</button>
+            </form>
+        </div>
+
+        <div class="onerge-list">
+            {% for onerge in onergeler %}
+                <div class="onerge-item">
+                    <div class="onerge-header">
+                        <p><strong>{{ onerge.vekil_isim }}</strong></p>
+                        <p class="oturum-bilgisi">Oturum: {{ onerge.oturum_konusu }}</p>
+                    </div>
+                    <p class="onerge-icerik">{{ onerge.icerik }}</p>
+                    {% if not onerge.oylanmis %}
+                        <button onclick="startVoting({{ onerge.id }})" class="vote-btn">Oylama Başlat</button>
+                    {% else %}
+                        <p class="vote-result">Sonuç: {{ onerge.evet_oyu }} Evet, {{ onerge.hayir_oyu }} Hayır</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Vekil Listesi -->
+    <div class="vekil-panel">
+        <h3>Milletvekilleri</h3>
+        <div class="vekil-list">
+            {% for vekil in vekiller %}
+            <div class="vekil-card">
+                <div class="vekil-info">
+                    <span class="vekil-name">{{ vekil.isim }}</span>
+                    <div class="vekil-stats">
+                        <span class="uyari-count">{{ vekil.uyari_sayisi }} Uyarı</span>
+                        <span class="devamsizlik-count">{{ vekil.devamsizlik }} Devamsızlık</span>
+                    </div>
+                </div>
+                <div class="vekil-actions">
+                    <button onclick="showUyariModal({{ vekil.id }}, '{{ vekil.isim }}')" class="uyari-btn">Uyarı Ver</button>
+                    <button onclick="showUyariGecmisi({{ vekil.id }}, '{{ vekil.isim }}')" class="gecmis-btn">Uyarı Geçmişi</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{{ url_for('yoklama_loglar') }}" class="log-btn">Yoklama Logları</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Çıkış Yap</a>
+    </div>
+</div>
+
+<!-- Oylama Modal -->
+<div id="voting-modal" class="modal">
+    <div class="modal-content">
+        <h3>Oylama</h3>
+        <form id="voting-form">
+            <div class="form-group">
+                <label>Evet Oyları:</label>
+                <input type="number" name="evet" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>Hayır Oyları:</label>
+                <input type="number" name="hayir" min="0" required>
+            </div>
+            <button type="submit">Oylamayı Tamamla</button>
+        </form>
+    </div>
+</div>
+
+<!-- Uyarı Modal -->
+<div id="uyari-modal" class="modal">
+    <div class="modal-content">
+        <h3>Uyarı Ver: <span id="uyari-vekil-name"></span></h3>
+        <form id="uyari-form">
+            <div class="form-group">
+                <label>Uyarı Sebebi:</label>
+                <textarea name="sebep" required></textarea>
+            </div>
+            <button type="submit">Uyarı Ver</button>
+            <button type="button" onclick="closeUyariModal()" class="cancel-btn">İptal</button>
+        </form>
+    </div>
+</div>
+
+<!-- Uyarı Geçmişi Modal -->
+<div id="gecmis-modal" class="modal">
+    <div class="modal-content">
+        <h3>Uyarı Geçmişi: <span id="gecmis-vekil-name"></span></h3>
+        <div id="uyari-gecmisi"></div>
+        <button onclick="closeGecmisModal()" class="close-btn">Kapat</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Oturum sayacı
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes} dakika ${remainingSeconds} saniye`;
+    }
+
+    let totalSeconds;
+
+    function initTimer() {
+        const countdownEl = document.getElementById('countdown');
+        if (countdownEl) {
+            totalSeconds = parseInt(countdownEl.textContent);
+            countdownEl.textContent = formatTime(totalSeconds);
+            updateTimer();
+        }
+    }
+
+    function updateTimer() {
+        const countdownEl = document.getElementById('countdown');
+        if (countdownEl && totalSeconds > 0) {
+            totalSeconds--;
+            countdownEl.textContent = formatTime(totalSeconds);
+            setTimeout(updateTimer, 1000);
+        } else if (countdownEl && totalSeconds <= 0) {
+            countdownEl.textContent = "Süre doldu!";
+        }
+    }
+
+    // Oylama işlemleri
+    function startVoting(onergeId) {
+        const modal = document.getElementById('voting-modal');
+        modal.style.display = 'block';
+        const form = document.getElementById('voting-form');
+        form.onsubmit = function(e) {
+            e.preventDefault();
+            submitVote(onergeId, this);
+        };
+    }
+
+    function submitVote(onergeId, form) {
+        const data = {
+            onerge_id: onergeId,
+            evet: form.evet.value,
+            hayir: form.hayir.value
+        };
+
+        fetch('/oylama', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+
+    // Oturum bitirme
+    function endOturum() {
+        if (confirm('Oturumu sonlandırmak istediğinize emin misiniz?')) {
+            fetch('/oturum_bitir', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    }
+
+    // Yoklama alma
+    async function yoklamaAl() {
+        const vekilDurumlari = {};
+        const vekiller = document.querySelectorAll('.vekil-durum');
+        
+        vekiller.forEach(vekil => {
+            const vekilId = vekil.querySelector('input').name.split('_')[1];
+            const durum = vekil.querySelector('input:checked').value === '1';
+            vekilDurumlari[vekilId] = durum;
+        });
+
+        try {
+            const response = await fetch('/yoklama_al', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ vekil_durumlari: vekilDurumlari })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.yeterli_cogunluk) {
+                    document.querySelector('.yoklama-section').style.display = 'none';
+                    document.querySelector('.new-oturum').style.display = 'block';
+                } else {
+                    alert('Yeterli çoğunluk sağlanamadı. Oturum başlatılamaz.');
+                }
+            }
+        } catch (error) {
+            alert('Bir hata oluştu');
+        }
+    }
+
+    // Sayfa yüklendiğinde son yoklamayı kontrol et ve form görünürlüğünü ayarla
+    async function checkSonYoklama() {
+        const activeOturum = document.querySelector('.active-oturum');
+        const yoklamaSection = document.querySelector('.yoklama-section');
+        const newOturum = document.querySelector('.new-oturum');
+
+        if (!activeOturum) {
+            try {
+                const response = await fetch('/son_yoklama');
+                const data = await response.json();
+                
+                if (data.varsa && data.yeterli_cogunluk) {
+                    yoklamaSection.style.display = 'none';
+                    newOturum.style.display = 'block';
+                } else {
+                    yoklamaSection.style.display = 'block';
+                    newOturum.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Yoklama kontrolünde hata:', error);
+                // Hata durumunda varsayılan olarak yoklama formunu göster
+                yoklamaSection.style.display = 'block';
+                newOturum.style.display = 'none';
+            }
+        }
+    }
+
+    // Sayfa yüklendiğinde çalıştır
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sadece aktif oturum varsa sayacı başlat
+        const activeOturum = document.querySelector('.active-oturum');
+        if (activeOturum) {
+            initTimer();
+        }
+        
+        // Aktif oturum yoksa yoklama kontrolü yap
+        if (!activeOturum) {
+            checkSonYoklama();
+        }
+    });
+
+    let currentVekilId = null;
+
+    function showUyariModal(vekilId, vekilName) {
+        currentVekilId = vekilId;
+        document.getElementById('uyari-vekil-name').textContent = vekilName;
+        document.getElementById('uyari-modal').style.display = 'block';
+    }
+
+    function closeUyariModal() {
+        document.getElementById('uyari-modal').style.display = 'none';
+        document.getElementById('uyari-form').reset();
+    }
+
+    document.getElementById('uyari-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const sebep = this.sebep.value;
+        
+        try {
+            const response = await fetch('/uyari_ver', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    vekil_id: currentVekilId,
+                    sebep: sebep
+                })
+            });
+            
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            alert('Bir hata oluştu');
+        }
+    };
+
+    async function showUyariGecmisi(vekilId, vekilName) {
+        document.getElementById('gecmis-vekil-name').textContent = vekilName;
+        
+        try {
+            const response = await fetch(`/uyari_gecmisi/${vekilId}`);
+            const uyarilar = await response.json();
+            
+            const gecmisDiv = document.getElementById('uyari-gecmisi');
+            gecmisDiv.innerHTML = uyarilar.map(uyari => `
+                <div class="uyari-item">
+                    <div class="uyari-tarih">${uyari.tarih}</div>
+                    <div class="uyari-sebep">${uyari.sebep}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('gecmis-modal').style.display = 'block';
+        } catch (error) {
+            alert('Uyarı geçmişi yüklenirken bir hata oluştu');
+        }
+    }
+
+    function closeGecmisModal() {
+        document.getElementById('gecmis-modal').style.display = 'none';
+    }
+</script>
+{% endblock %} 

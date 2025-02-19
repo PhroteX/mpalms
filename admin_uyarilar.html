@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>Uyarı ve Devamsızlık Kayıtları</h2>
+
+    <!-- Devamsızlık Tablosu -->
+    <div class="section">
+        <h3>Devamsızlık Kayıtları</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Milletvekili</th>
+                        <th>Komisyon</th>
+                        <th>Devamsızlık</th>
+                        <th>Katılım Oranı</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in devamsizliklar %}
+                    <tr>
+                        <td>{{ d.vekil_isim }}</td>
+                        <td>{{ d.komisyon_adi }}</td>
+                        <td>{{ d.devamsizlik_sayisi }}</td>
+                        <td>{{ "%.1f"|format((d.toplam_yoklama - d.devamsizlik_sayisi) / d.toplam_yoklama * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Uyarı Listesi -->
+    <div class="section">
+        <h3>Uyarı Kayıtları</h3>
+        <div class="uyari-list">
+            {% for uyari in uyarilar %}
+            <div class="uyari-card">
+                <div class="uyari-header">
+                    <div class="uyari-info">
+                        <span class="vekil-name">{{ uyari.vekil_isim }}</span>
+                        <span class="komisyon-badge">{{ uyari.komisyon_adi }}</span>
+                    </div>
+                    <span class="uyari-tarih">{{ uyari.formatli_tarih }}</span>
+                </div>
+                <div class="uyari-content">
+                    {{ uyari.sebep }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('admin_panel') }}" class="geri-btn">Geri Dön</a>
+</div>
+{% endblock %} 

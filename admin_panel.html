@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MPAL Meclis Simülasyonu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='assets/meclislogo.jpg') }}" type="image/jpg">
+</head>
+<body>
+    <header class="header">
+        <img src="{{ url_for('static', filename='assets/meclislogo.jpg') }}" alt="MPAL Meclis Logo" class="logo">
+        <h1 class="header-title">MPAL Meclis Simülasyonu</h1>
+    </header>
+
+    <div class="admin-container">
+        <h2>Admin Paneli</h2>
+        <div class="create-account">
+            <h3>Komisyon Başkanı Hesabı Oluştur</h3>
+            <form method="POST">
+                <div class="form-group">
+                    <label>Kullanıcı Adı:</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Şifre:</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Komisyon:</label>
+                    <input type="text" name="komisyon" required>
+                </div>
+                <button type="submit">Hesap Oluştur</button>
+            </form>
+        </div>
+        
+        <div class="existing-accounts">
+            <h3>Mevcut Komisyon Başkanları</h3>
+            <table>
+                <tr>
+                    <th>Kullanıcı Adı</th>
+                    <th>Komisyon</th>
+                </tr>
+                {% for baskan in baskanlar %}
+                <tr>
+                    <td>{{ baskan.username }}</td>
+                    <td>{{ baskan.komisyon }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="{{ url_for('admin_uyarilar') }}" class="warning-btn">Uyarı ve Devamsızlık Kayıtları</a>
+            <a href="{{ url_for('yoklama_loglar') }}" class="log-btn">Tüm Yoklama Logları</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Çıkış Yap</a>
+        </div>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 MPAL Meclis Simülasyonu. Tüm hakları saklıdır.</p>
+    </footer>
+</body>
+</html> 

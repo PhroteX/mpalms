@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MPAL Meclis Simülasyonu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='assets/meclislogo.jpg') }}" type="image/jpg">
+</head>
+<body>
+    <header class="header">
+        <img src="{{ url_for('static', filename='assets/meclislogo.jpg') }}" alt="MPAL Meclis Logo" class="logo">
+        <h1 class="header-title">MPAL Meclis Simülasyonu</h1>
+    </header>
+
+    <div class="baskan-container">
+        <h2>Yoklama Logları</h2>
+        
+        <div class="log-list">
+            {% for yoklama in yoklamalar %}
+            <div class="log-item">
+                <div class="log-header">
+                    {% if is_admin %}
+                    <span class="komisyon-badge">{{ yoklama.komisyon_adi }}</span>
+                    {% endif %}
+                    <span class="log-tarih">{{ yoklama.formatli_tarih }}</span>
+                    <span class="log-ozet">
+                        {% if yoklama.oturum_konusu %}
+                        <span class="oturum-konusu">{{ yoklama.oturum_konusu }}</span>
+                        {% endif %}
+                        Toplam: {{ yoklama.toplam_vekil }}, Mevcut: {{ yoklama.mevcut_vekil }}
+                    </span>
+                </div>
+                <div class="log-detay">
+                    {% if yoklama.detaylar %}
+                        {% for detay in yoklama.detaylar.split(',') %}
+                            {% set vekil_bilgi = detay.split(':') %}
+                            <div class="vekil-durum-log">
+                                <span>{{ vekil_bilgi[0] }}</span>
+                                <span class="durum-badge {% if vekil_bilgi[1] == '1' %}mevcut{% else %}yok{% endif %}">
+                                    {{ 'Mevcut' if vekil_bilgi[1] == '1' else 'Yok' }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <a href="{{ url_for('baskan_panel' if session.role == 'baskan' else 'admin_panel') }}" class="geri-btn">Geri Dön</a>
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 MPAL Meclis Simülasyonu. Tüm hakları saklıdır.</p>
+    </footer>
+</body>
+</html> 

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MPAL Meclis Simülasyonu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='assets/meclislogo.jpg') }}" type="image/jpg">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="header">
+        <img src="{{ url_for('static', filename='assets/meclislogo.jpg') }}" alt="MPAL Meclis Logo" class="logo">
+        <h1 class="header-title">MPAL Meclis Simülasyonu</h1>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+        <p>© 2024 MPAL Meclis Simülasyonu. Tüm hakları saklıdır.</p>
+    </footer>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
