@@ -1,0 +1,11 @@
+meclis_simulasyonu/
+    ├── static/
+    │   └── css/
+    │       └── style.css
+    ├── templates/
+    │   ├── login.html
+    │   ├── admin_panel.html
+    │   ├── baskan_panel.html
+    │   └── ilk_giris.html
+    ├── app.py
+    └── database.py 
